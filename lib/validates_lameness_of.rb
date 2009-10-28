@@ -4,7 +4,7 @@ module ValidatesLamenessOf
   mattr_accessor :data_directory
   @@data_directory = 'tmp/lameness_data'
 
-  # Validates whether the specified value is a valid email address.  Returns nil if the value is valid, otherwise returns an array
+  # Validates whether the specified value has too many capital letters.  Returns nil if the value is valid, otherwise returns an array
   # containing one or more validation error messages.
   #
   # Configuration options:
@@ -26,6 +26,28 @@ module ValidatesLamenessOf
     return [options[:message] ] if percentage_uppercase > options[:maximum_uppercase_percentage].to_f
 
     return nil    # represents no validation errors
+  end
+  
+  # Validates whether the specified value has too many exclamation marks.  Returns nil if the value is valid, otherwise returns an array
+  # containing one or more validation error messages.
+  #
+  # Configuration options:
+  # * <tt>message</tt> - A custom error message (default is: " contains too many exclamation marks.")
+  # * <tt>maximum_in_composition</tt> - Maximum number of exclamation marks in the text (default is 3)
+  # * <tt>maximum_together</tt> - Maximum number of exclamation marks together (default is 1)
+  def self.validate_exclamation_marks_of(value, options={})
+    default_options = { :message => ' contains too many exclamation marks.', :maximum_in_composition => 3,
+      :maximum_together => 1}
+    options.merge!(default_options) {|key, old, new| old}  # merge the default options into the specified options, retaining all specified options
+
+    total_marks = value.count("!")
+
+    return [options[:message]] if total_marks > options[:maximum_in_composition]
+
+    # if more than maximum_together exclamation marks appear together, fail validation
+    return [options[:message]] if !value.index(Regexp.new(Array.new(options[:maximum_together] + 1, '!').join)).nil?
+
+    return nil
   end
 
   def self.report_lameness(value, class_name, field)
@@ -127,18 +149,40 @@ module ActiveRecord
       #
       # Configuration options:
       # * <tt>message</tt> - A custom error message (default is: " does not appear to be a valid e-mail address")
+      # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
+      # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
+      # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is false)
       # * <tt>on</tt> - Specifies when this validation is active (default is :save, other options :create, :update)
       # * <tt>allow_nil</tt> - Allow nil values (default is true)
       # * <tt>allow_blank</tt> - Allow blank values (default is true)
       # * <tt>if</tt> - Specifies a method, proc or string to call to determine if the validation should
-      # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
-      # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is false)
-      # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
       #   occur (e.g. :if => :allow_validation, or :if => Proc.new { |user| user.signup_step > 2 }).  The
       #   method, proc or string should return or evaluate to a true or false value.
       # * <tt>unless</tt> - See <tt>:if</tt>
       def validate_capitilization_of(*attr_names)
         perform_lameness_validation("validate_capitilization_of", *attr_names)
+      end
+
+      # Validates the number and repetition of exclamation marks in the specified attribute
+      #
+      #   class User < ActiveRecord::Base
+      #     validate_exclamation_marks_of :comment, :on => :create
+      #   end
+      #
+      # Configuration options:
+      # * <tt>message</tt> - A custom error message (default is: " contains too many exclamation marks.")
+      # * <tt>maximum_in_composition</tt> - Maximum number of exclamation marks in the text (default is 3)
+      # * <tt>maximum_together</tt> - Maximum number of exclamation marks together (default is 1)
+      # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is false)
+      # * <tt>on</tt> - Specifies when this validation is active (default is :save, other options :create, :update)
+      # * <tt>allow_nil</tt> - Allow nil values (default is true)
+      # * <tt>allow_blank</tt> - Allow blank values (default is true)
+      # * <tt>if</tt> - Specifies a method, proc or string to call to determine if the validation should
+      #   occur (e.g. :if => :allow_validation, or :if => Proc.new { |user| user.signup_step > 2 }).  The
+      #   method, proc or string should return or evaluate to a true or false value.
+      # * <tt>unless</tt> - See <tt>:if</tt>
+      def validate_exclamation_marks_of(*attr_names)
+        perform_lameness_validation("validate_exclamation_marks_of", *attr_names)
       end
       
       protected

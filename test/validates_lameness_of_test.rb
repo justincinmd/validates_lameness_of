@@ -9,10 +9,8 @@ class ValidatesLamenessOfTest < ActiverecordHelper
   
   def test_capitilization
     # minimum_size: 5
-    # maximum_uppercase_percentage: 40
+    # maximum_uppercase_percentage: 40  
     
-    valid_comment(nil)
-    valid_comment("")
     valid_comment("abcd")
     valid_comment("ABCD")
     valid_comment("Testi")
@@ -20,6 +18,22 @@ class ValidatesLamenessOfTest < ActiverecordHelper
     valid_comment("A.B.C.D.") # Tests minimum size
     invalid_comment("TESti")
     invalid_comment("TESTI")
+  end
+
+  def test_exclamation_marks
+    # :maximum_in_composition => 2
+    # :maximum_together => 1
+
+    valid_comment("no marks is valid")
+    valid_comment("one mark is valid!")
+    invalid_comment("two marks together is not valid!!")
+    valid_comment("two marks apart! is valid!")
+    invalid_comment("three marks! not! valid!")
+  end
+
+  def test_valid_blank_and_nil
+    valid_comment(nil)
+    valid_comment("")
   end
   
   protected

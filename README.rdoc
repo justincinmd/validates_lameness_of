@@ -37,4 +37,4 @@ environment, you will probably want to set this somewhere that persists between 
 * GitHub Repsitory: http://github.com/jcnnghm/validates_lameness_of
 * RDocs: http://rdoc.info/projects/jcnnghm/validates_lameness_of
 
-Copyright (c) 2009 [name of plugin creator], released under the MIT license
+Copyright (c) 2009 Justin Cunningham, released under the MIT license
