@@ -2,7 +2,7 @@ module ValidatesLamenessOf
   # Default data directory.  This should persist across deployments
   # Defaults to "tmp/bayes_data"
   mattr_accessor :data_directory
-  @@data_directory = 'tmp/bayes_data'
+  @@data_directory = 'tmp/lameness_data'
 
   # Validates whether the specified value is a valid email address.  Returns nil if the value is valid, otherwise returns an array
   # containing one or more validation error messages.

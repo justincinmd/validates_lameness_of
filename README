@@ -3,11 +3,38 @@ ValidatesLamenessOf
 
 Introduction goes here.
 
+Installation
+============
+
+ValidatesLamenessOf is available as a traditional plugin. To
+install it as a traditional plugin (Rails 2.1 or later):
+
+  script/plugin install git://github.com/jcnnghm/validates_lameness_of.git
+
+To use the bayesian filtering, you'll need to install the classifier gem, and the
+madeleine gem.  To do this, add the following to your environment.rb, then run
+rake gems:install.
+
+  config.gem 'classifier'
+  config.gem 'madeleine'
 
 Example
 =======
 
 Example goes here.
 
+Configuration
+=============
+
+You may need to configure ValidatesLamenessOf for your setup. The
+configuration required is:
+
+data_directory
+--------
+
+String that sets the directory that will be used to store persisted bayesian filter data.  In your production
+environment, you will probably want to set this somewhere that persists between deployments.
+
+ValidatesLamenessOf.data_directory = 'tmp/lameness_data' # sets for current environment (also the default)
 
 Copyright (c) 2009 [name of plugin creator], released under the MIT license
