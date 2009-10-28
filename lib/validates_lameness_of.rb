@@ -45,10 +45,10 @@ module ValidatesLamenessOf
       :minimum_size => 20}
     options.merge!(default_options) {|key, old, new| old}  # merge the default options into the specified options, retaining all specified options
 
-    return nil if value.size < options[:minimum_size]
-
     total_characters = value.count("a-zA-Z").to_f
     total_uppercase = value.count("A-Z").to_f
+    
+    return nil if total_characters < options[:minimum_size]
 
     percentage_uppercase = (total_uppercase / total_characters) * 100
 
@@ -146,9 +146,9 @@ module ActiveRecord
               record.errors.add(attr_name, error)
             end
 
-            record.lameness_reported = true if options[:report_lameness]
+            #record.lameness_reported = true if options[:report_lameness]
           else
-            record.lameness_reported = false || record.lame if options [:report_lameness]
+            #record.lameness_reported = false || record.lame if options [:report_lameness]
           end
         end
       end
