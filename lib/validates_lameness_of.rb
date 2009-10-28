@@ -1,4 +1,9 @@
 module ValidatesLamenessOf
+  # Default data directory.  This should persist across deployments
+  # Defaults to "tmp/bayes_data"
+  mattr_accessor :data_directory
+  @@data_directory = 'tmp/bayes_data'
+
   # Validates whether the specified value is a valid email address.  Returns nil if the value is valid, otherwise returns an array
   # containing one or more validation error messages.
   #
@@ -39,15 +44,15 @@ module ValidatesLamenessOf
   end
 
   def self.report_bayes(value, category, class_name, field)
-    m = SnapshotMadeleine.new("bayes_data/#{class_name}/#{field}") {
+    m = SnapshotMadeleine.new("#{ValidatesLamenessOf.data_directory}/#{class_name}/#{field}") {
       Classifier::Bayes.new 'lame', 'unlame'
     }
-    m.system.train(category, value) if !(ValidatesLamenessOf.is_lame?(category, class_name, field) and category == 'lame')
+    m.system.train(category, value) unless (ValidatesLamenessOf.is_lame?(category, class_name, field) and category == 'lame') # it's being marked lame but it already is
     m.take_snapshot
   end
 
   def self.is_lame?(value, class_name, field)
-    m = SnapshotMadeleine.new("bayes_data/#{class_name}/#{field}") {
+    m = SnapshotMadeleine.new("#{ValidatesLamenessOf.data_directory}/#{class_name}/#{field}") {
       Classifier::Bayes.new 'lame', 'unlame'
     }
     classifications = m.system.classifications(value)
