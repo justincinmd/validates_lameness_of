@@ -3,40 +3,6 @@ module ValidatesLamenessOf
   # containing one or more validation error messages.
   #
   # Configuration options:
-  # * <tt>message</tt> - A custom error message (default is: " does not appear to be a valid e-mail address")
-  # * <tt>check_mx</tt> - Check for MX records (default is false)
-  # * <tt>mx_message</tt> - A custom error message when an MX record validation fails (default is: " is not routable.")
-  # * <tt>with</tt> The regex to use for validating the format of the email address (default is ValidatesEmailFormatOf::Regex)</tt>
-  def self.validate_email_format(email, options={})
-      default_options = { :message => ' does not appear to be a valid e-mail address',
-                          :check_mx => false,
-                          :mx_message => ' is not routable.',
-                          :with => ValidatesEmailFormatOf::Regex }
-      options.merge!(default_options) {|key, old, new| old}  # merge the default options into the specified options, retaining all specified options
-
-      # local part max is 64 chars, domain part max is 255 chars
-      # TODO: should this decode escaped entities before counting?
-      begin
-        domain, local = email.reverse.split('@', 2)
-      rescue
-        return [ options[:message] ]
-      end
-
-      unless email =~ options[:with] and not email =~ /\.\./ and domain.length <= 255 and local.length <= 64
-        return [ options[:message] ]
-      end
-
-      if options[:check_mx] and !ValidatesEmailFormatOf::validate_email_domain(email)
-        return [ options[:mx_message] ]
-      end
-
-      return nil    # represents no validation errors
-  end
-
-  # Validates whether the specified value is a valid email address.  Returns nil if the value is valid, otherwise returns an array
-  # containing one or more validation error messages.
-  #
-  # Configuration options:
   # * <tt>message</tt> - A custom error message (default is: " contains too many capital letters.")
   # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
   # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
@@ -57,56 +23,97 @@ module ValidatesLamenessOf
     return nil    # represents no validation errors
   end
 
-  def self.report_lameness(value)
-    if defined?(Classifier) && defined?(SnapshotMadeleine)
-      ValidatesLamenessOf.report(value, "lame")
-    end
+  def self.report_lameness(value, class_name, field)
+    ValidatesLamenessOf.report(value, "lame", class_name, field)
   end
 
-  def self.report_unlameness(value)
-    ValidatesLamenessOf.report(value, "unlame")
+  def self.report_unlameness(value, class_name, field)
+    ValidatesLamenessOf.report(value, "unlame", class_name, field)
   end
 
-  def self.report(value, classification)
-    if defined?(Classifier) && defined?(SnapshotMadeleine)
-      ValidatesLamenessOf.report_bayes(value, classification)
-      ValidatesLamenessOf.report_lsi(value, classification)
-    end
+  def self.report(value, classification, class_name, field)
+    require 'classifier' if !defined?(Classifier)
+    require 'madeleine' if !defined?(SnapshotMadeleine)
+    
+    ValidatesLamenessOf.report_bayes(value, classification, class_name, field)
   end
 
-  def self.report_bayes(value, category)
-    m = SnapshotMadeleine.new("bayes_data") {
+  def self.report_bayes(value, category, class_name, field)
+    m = SnapshotMadeleine.new("bayes_data/#{class_name}/#{field}") {
       Classifier::Bayes.new 'lame', 'unlame'
     }
-    m.system.train(category, value)
+    m.system.train(category, value) if !(ValidatesLamenessOf.is_lame?(category, class_name, field) and category == 'lame')
     m.take_snapshot
   end
 
-  def self.report_lsi(value, category)
-    m = SnapshotMadeleine.new("bayes_data") {
-      Classifier::LSI.new
-    }
-    m.add_item(value, category)
-    m.take_snapshot
-  end
-
-  def self.is_lame?(value)
-    m = SnapshotMadeleine.new("bayes_data") {
+  def self.is_lame?(value, class_name, field)
+    m = SnapshotMadeleine.new("bayes_data/#{class_name}/#{field}") {
       Classifier::Bayes.new 'lame', 'unlame'
     }
-    classification = m.classify(value)
-
-    # reinforce lameness
-    ValidatesLamenessOf.report(value, classification)
-
-    return classification == 'lame'
+    classifications = m.system.classifications(value)
+    if !classifications['Lame'].finite? or !classifications['Unlame'].finite?
+      return false
+    else
+      return m.system.classify(value) == 'lame'
+    end
   end
 end
 
 module ActiveRecord
+  class Base
+    before_validation :reset_lame_fields
+    after_validation :report_lame_fields
+
+    protected
+
+    def reset_lame_fields
+      self.errors.reset_lame_fields
+      self.errors.reset_lameness_fields
+    end
+
+    def report_lame_fields
+      for field in self.errors.lame_fields
+        ValidatesLamenessOf.report_lameness(self.send(field), self.class.class_name, field.to_s)
+      end
+
+      for field in self.errors.unlame_fields
+        ValidatesLamenessOf.report_unlameness(self.send(field), self.class.class_name, field.to_s)
+      end
+    end
+  end
+
+  class Errors
+    def lame_fields
+      @lame_fields ||= reset_lame_fields
+    end
+
+    def reset_lame_fields
+      @lame_fields = []
+    end
+
+    def add_lame_field(field)
+      @lame_fields << field unless lame_fields.include?(field)
+    end
+
+    def lameness_fields
+      @lameness_fields ||= reset_lameness_fields
+    end
+
+    def reset_lameness_fields
+      @lameness_fields = []
+    end
+
+    def add_lameness_field(field)
+      @lameness_fields << field unless lameness_fields.include?(field)
+    end
+
+    def unlame_fields
+      lameness_fields - lame_fields
+    end
+  end
+
   module Validations
     module ClassMethods
-      
       # Validates the capitilization of the specified attribute
       #
       #   class User < ActiveRecord::Base
@@ -120,7 +127,7 @@ module ActiveRecord
       # * <tt>allow_blank</tt> - Allow blank values (default is true)
       # * <tt>if</tt> - Specifies a method, proc or string to call to determine if the validation should
       # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
-      # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is true)
+      # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is false)
       # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
       #   occur (e.g. :if => :allow_validation, or :if => Proc.new { |user| user.signup_step > 2 }).  The
       #   method, proc or string should return or evaluate to a true or false value.
@@ -129,13 +136,13 @@ module ActiveRecord
         perform_lameness_validation("validate_capitilization_of", *attr_names)
       end
       
-      private
+      protected
       
       def perform_lameness_validation(method, *attr_names)
         options = { :on => :save,
                     :allow_nil => true,
                     :allow_blank => true,
-                    :report_lameness => true}
+                    :report_lameness => false}
         options.update(attr_names.pop) if attr_names.last.is_a?(Hash)
 
         validates_each(attr_names, options) do |record, attr_name, value|
@@ -146,10 +153,9 @@ module ActiveRecord
               record.errors.add(attr_name, error)
             end
 
-            #record.lameness_reported = true if options[:report_lameness]
-          else
-            #record.lameness_reported = false || record.lame if options [:report_lameness]
+            record.errors.add_lame_field(attr_name) if options[:report_lameness]
           end
+          record.errors.add_lameness_field(attr_name) if options[:report_lameness]
         end
       end
     end

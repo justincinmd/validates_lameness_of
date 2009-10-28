@@ -27,11 +27,13 @@ class ValidatesLamenessOfTest < ActiverecordHelper
   def valid_comment(comment)
     comment = Comment.new(:comment => comment)
     assert comment.valid?
+    assert !comment.errors.lame_fields.include?(:comment)
   end
   
   def invalid_comment(comment)
     comment = Comment.new(:comment => comment)
     assert !comment.valid?
+    assert comment.errors.lame_fields.include?(:comment)
   end
   
 end
