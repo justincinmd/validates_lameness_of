@@ -40,4 +40,11 @@ environment, you will probably want to set this somewhere that persists between 
 * GitHub Repsitory: http://github.com/jcnnghm/validates_lameness_of
 * RDocs: http://rdoc.info/projects/jcnnghm/validates_lameness_of
 
+== Credits
+
+Based, in part, on the following:
+
+* Alex Dunae's validates_email_format_of: http://github.com/alexdunae/validates_email_format_of
+* Tommaso Baldovino's Unit Testing Blog Post: http://usefulfor.com/ruby/2009/01/22/unit-testing-your-ruby-on-rails-plugin/
+
 Copyright (c) 2009 Justin Cunningham, released under the MIT license

@@ -157,7 +157,7 @@ module ActiveRecord
       #   end
       #
       # Configuration options:
-      # * <tt>message</tt> - A custom error message (default is: " does not appear to be a valid e-mail address")
+      # * <tt>message</tt> - A custom error message (default is: " contains too many capital letters.")
       # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
       # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
       # * <tt>maximum_capital_words</tt> - Maximum number of capital words allowed (default is 5)
