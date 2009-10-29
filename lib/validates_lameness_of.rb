@@ -11,9 +11,11 @@ module ValidatesLamenessOf
   # * <tt>message</tt> - A custom error message (default is: " contains too many capital letters.")
   # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
   # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
+  # * <tt>maximum_capital_words</tt> - Maximum number of capital words allowed (default is 5)
+  # * <tt>maximum_percentage_of_capital_words</tt> - Maximum percentage of all words allowed to be capital (default is 100)
   def self.validate_capitilization_of(value, options={})
     default_options = { :message => ' contains too many capital letters.', :maximum_uppercase_percentage => 40,
-      :minimum_size => 20}
+      :minimum_size => 20, :maximum_capital_words => 5, :maximum_percentage_of_capital_words => 100}
     options.merge!(default_options) {|key, old, new| old}  # merge the default options into the specified options, retaining all specified options
 
     total_characters = value.count("a-zA-Z").to_f
@@ -24,6 +26,13 @@ module ValidatesLamenessOf
     percentage_uppercase = (total_uppercase / total_characters) * 100
 
     return [options[:message] ] if percentage_uppercase > options[:maximum_uppercase_percentage].to_f
+
+    number_of_capital_words = value.scan(Regexp.new(/\b[A-Z]{2,}\b/)).size
+    number_of_words = value.scan(Regexp.new(/\b\w{2,}\b/)).size
+    percentage_of_capital_words = ((number_of_capital_words.to_f / number_of_words.to_f) * 100)
+
+    return [options[:message]] if number_of_capital_words > options[:maximum_capital_words]
+    return [options[:message]] if percentage_of_capital_words > options[:maximum_percentage_of_capital_words]
 
     return nil    # represents no validation errors
   end
@@ -151,6 +160,8 @@ module ActiveRecord
       # * <tt>message</tt> - A custom error message (default is: " does not appear to be a valid e-mail address")
       # * <tt>maximum_uppercase_percentage</tt> - Maximum percentage of uppercase letters considered not lame (default is 40)
       # * <tt>minimum_size</tt> - Minimum number of characters in string for validation to occur (default is 20)
+      # * <tt>maximum_capital_words</tt> - Maximum number of capital words allowed (default is 5)
+      # * <tt>maximum_percentage_of_capital_words</tt> - Maximum percentage of all words allowed to be capital (default is 100)
       # * <tt>report_lameness</tt> - Controls whether a lameness report is made from this validation (default is false)
       # * <tt>on</tt> - Specifies when this validation is active (default is :save, other options :create, :update)
       # * <tt>allow_nil</tt> - Allow nil values (default is true)
