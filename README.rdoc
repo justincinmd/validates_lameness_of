@@ -1,6 +1,19 @@
 = ValidatesLamenessOf
 
-Introduction goes here.
+ValidatesLamenessOf is a plugin that I developed to assist in clearing up some of the
+negative behavior shown in our user comments.  I've observered that user's that exhibit
+a set of behaviors, are likely to exhibit many more.  In other words, a good user is likely
+to leave a comment like "This is a good comment", whereas a bad user is likely to write
+something like "OMG THIS IS SOU FUNNY!!!!!! :) lol xoxo".  While the first isn't really lame at all,
+the second is lame in many different ways.
+
+The idea behind this plugin is that if we filter for obviously lame things, like an
+abundance of ALL CAPS words, or excessive exclamation marks, we can use these lame and non-lame comments
+to train a Bayesian filter to automatically classify comments over time as the
+definition of lameness evolves.  Comments can presently be reported for filtering,
+although there doesn't yet exist a validation to check against the filter, as further
+testing is needed.  Over time, additional lameness reporting validations will be
+added as user behaviors change.
 
 == Installation
 
@@ -18,10 +31,15 @@ rake gems:install.
 
 == Example
 
+The validations work like any other validation.
+
   class Comment < ActiveRecord::Base
     validate_capitilization_of :comment, :minimum_size => 5, :maximum_uppercase_percentage => 40, :report_lameness => true
     validate_exclamation_marks_of :comment, :maximum_in_composition => 2, :maximum_together => 1, :report_lameness => true
   end
+
+The only difference is the report_lameness option, which, when set to true, will
+automatically train a bayesian filter for each field.
 
 == Configuration
 
@@ -46,5 +64,6 @@ Based, in part, on the following:
 
 * Alex Dunae's validates_email_format_of: http://github.com/alexdunae/validates_email_format_of
 * Tommaso Baldovino's Unit Testing Blog Post: http://usefulfor.com/ruby/2009/01/22/unit-testing-your-ruby-on-rails-plugin/
+* jrhicks on Stack Overflow, who suggested a Bayesian Classifier: http://stackoverflow.com/questions/1602740/rails-lameness-filter
 
 Copyright (c) 2009 Justin Cunningham, released under the MIT license
